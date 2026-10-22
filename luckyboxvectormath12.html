@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hộp Quà May Mắn - Bài Toán Thực Tế Véctơ Không Gian 12</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Lexend', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+        }
+
+        /* Modals explicitly hidden by default */
+        .modal-overlay {
+            display: none !important;
+        }
+        .modal-overlay.active {
+            display: flex !important;
+        }
+
+        /* Lucky Gift Box Animations */
+        .gift-box {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            perspective: 1000px;
+        }
+        .gift-box:hover {
+            transform: translateY(-8px) scale(1.03);
+        }
+        .gift-box.opened {
+            filter: grayscale(0.5);
+            opacity: 0.75;
+        }
+
+        .modal-card-content {
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+
+        @keyframes lid-bounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(-3deg); }
+        }
+        .gift-box:not(.opened):hover .gift-lid {
+            animation: lid-bounce 0.6s infinite ease-in-out;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(236, 72, 153, 0.4); }
+            50% { shadow: 0 0 30px rgba(236, 72, 153, 0.8); }
+        }
+        .glow-effect {
+            animation: pulse-glow 2s infinite;
+        }
+
+        /* Custom Math Formatting CSS */
+        .vec {
+            position: relative;
+            display: inline-block;
+            padding-top: 0.2em;
+            margin: 0 2px;
+        }
+        .vec::after {
+            content: "→";
+            position: absolute;
+            top: -0.45em;
+            left: 50%;
+            transform: translateX(-50%) scaleX(1.1);
+            font-size: 0.75em;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .sub {
+            font-size: 0.75em;
+            vertical-align: sub;
+            line-height: 0;
+        }
+        .frac {
+            display: inline-flex;
+            flex-direction: column;
+            vertical-align: middle;
+            text-align: center;
+            padding: 0 3px;
+            font-size: 0.9em;
+        }
+        .frac .num {
+            border-bottom: 1.5px solid currentColor;
+            padding-bottom: 1px;
+            line-height: 1.1;
+        }
+        .frac .den {
+            padding-top: 1px;
+            line-height: 1.1;
+        }
+        .sqrt {
+            border-top: 1.5px solid currentColor;
+            padding-top: 1px;
+            margin-left: 1px;
+            display: inline-block;
+        }
+        .sqrt-symbol {
+            font-size: 1.05em;
+            vertical-align: baseline;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #6366f1;
+            border-radius: 4px;
+        }
+
+        /* SVG Vector Canvas Container */
+        .svg-container {
+            background: #0d1322;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex flex-col justify-between min-h-screen">
+
+    <header class="max-w-6xl mx-auto w-full mb-6">
+        <div class="bg-slate-800/80 backdrop-blur-md border border-slate-700 rounded-2xl p-4 md:p-6 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-tr from-pink-500 to-amber-400 rounded-xl flex items-center justify-center text-white text-2xl shadow-lg">
+                    <i class="fa-solid fa-gift"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-amber-300 via-pink-400 to-cyan-300 bg-clip-text text-transparent">
+                        HỘP QUÀ MAY MẮN - TOÁN 12
+                    </h1>
+                    <p class="text-xs md:text-sm text-slate-400">Chủ đề: Bài toán thực tế Véctơ trong không gian</p>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="flex items-center gap-4 bg-slate-900/80 px-5 py-2.5 rounded-xl border border-slate-700/60">
+                <div class="text-center px-2">
+                    <span class="text-xs text-slate-400 block uppercase font-semibold">Điểm số</span>
+                    <span id="score-val" class="text-xl font-black text-amber-400">0</span>
+                </div>
+                <div class="h-8 w-[1px] bg-slate-700"></div>
+                <div class="text-center px-2">
+                    <span class="text-xs text-slate-400 block uppercase font-semibold">Đã mở</span>
+                    <span id="opened-count" class="text-xl font-black text-cyan-400">0 / 7</span>
+                </div>
+                <div class="h-8 w-[1px] bg-slate-700"></div>
+                <div class="text-center px-2">
+                    <span class="text-xs text-slate-400 block uppercase font-semibold">Thời gian</span>
+                    <span id="timer-display" class="text-xl font-black text-emerald-400">21:00</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto w-full flex-1 flex flex-col justify-center my-4">
+        <div class="text-center mb-6">
+            <h2 class="text-lg md:text-xl font-medium text-slate-300">
+                Hãy chọn một <span class="text-amber-400 font-bold">Hộp Quà May Mắn</span> để giải bài toán Véctơ & nhận phần thưởng!
+            </h2>
+        </div>
+
+        <div id="boxes-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 p-2">
+            <!-- Boxes injected dynamically via JS -->
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-6xl mx-auto w-full text-center text-xs text-slate-500 py-4 mt-6 border-t border-slate-800">
+        Ứng dụng Game Web Giáo dục Luyện tập Bài toán Thực tế Véctơ Không Gian 12.
+    </footer>
+
+    <!-- Question Modal -->
+    <div id="question-modal" class="modal-overlay hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm items-center justify-center p-3 md:p-6 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-slate-100" id="modal-card">
+            
+            <!-- Modal Header -->
+            <div class="bg-slate-800/90 px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span id="modal-box-badge" class="px-3 py-1 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full text-xs font-bold uppercase tracking-wider text-white">
+                        Hộp quà số 1
+                    </span>
+                    <h3 id="modal-title" class="text-base md:text-lg font-bold text-slate-200">Bài toán Véctơ</h3>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl w-8 h-8 rounded-lg hover:bg-slate-700 transition flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-4 md:p-6 overflow-y-auto space-y-6 flex-1 modal-card-content">
+                
+                <!-- Layout Grid: Question + Vector Illustration Drawing -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    <!-- Question Text Side -->
+                    <div class="lg:col-span-7 space-y-3">
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/60 leading-relaxed text-sm md:text-base text-slate-200" id="modal-question-text">
+                            <!-- Question text injected here -->
+                        </div>
+
+                        <div class="bg-amber-500/10 border border-amber-500/30 p-3 rounded-lg text-amber-300 text-xs flex items-center gap-2">
+                            <i class="fa-solid fa-lightbulb text-amber-400 text-sm"></i>
+                            <span>Gợi ý: Áp dụng các quy tắc cộng véctơ, hình bình hành, hình hộp & cân bằng lực trong không gian.</span>
+                        </div>
+                    </div>
+
+                    <!-- Diagram/SVG Illustration Side -->
+                    <div class="lg:col-span-5 flex flex-col items-center justify-center">
+                        <div class="w-full svg-container p-3 flex flex-col items-center justify-center min-h-[250px]">
+                            <div id="svg-drawing-area" class="w-full flex items-center justify-center">
+                                <!-- Dynamic SVG diagram injected here -->
+                            </div>
+                            <span class="text-[11px] text-slate-400 mt-2 italic text-center">Hình minh họa thực tế & sơ đồ véctơ lực</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Answer Area -->
+                <div class="border-t border-slate-800 pt-5">
+                    <h4 class="text-sm font-semibold text-cyan-400 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square"></i> Chọn hoặc nhập câu trả lời của bạn:
+                    </h4>
+
+                    <!-- Dynamic Input/Options Container -->
+                    <div id="modal-answer-container" class="space-y-3">
+                        <!-- Options injected by JS based on question type -->
+                    </div>
+                </div>
+
+                <!-- Explanation Result Box -->
+                <div id="explanation-box" class="hidden p-4 rounded-xl bg-slate-800/90 border border-slate-700 space-y-2 text-sm">
+                    <div id="result-status-header" class="font-bold flex items-center gap-2 text-base"></div>
+                    <div class="text-slate-300 leading-relaxed pt-2 border-t border-slate-700/80" id="explanation-text"></div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-800/60 px-6 py-3 border-t border-slate-700 flex justify-between items-center">
+                <div class="text-xs text-slate-400">
+                    Phần thưởng: <span class="text-amber-400 font-bold">+100 điểm</span> & Quà may mắn
+                </div>
+                <div class="flex gap-3">
+                    <button id="btn-submit-ans" onclick="submitAnswer()" class="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg transition text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i> Gửi đáp án
+                    </button>
+                    <button id="btn-next-box" onclick="closeModal()" class="hidden px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl shadow-lg transition text-sm">
+                        Đóng & Tiếp tục
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Game Summary Modal -->
+    <div id="summary-modal" class="modal-overlay hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md items-center justify-center p-4">
+        <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-10 -left-10 w-32 h-32 bg-pink-500/20 rounded-full blur-2xl"></div>
+            <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-amber-500/20 rounded-full blur-2xl"></div>
+
+            <div class="w-20 h-20 bg-gradient-to-tr from-amber-400 to-pink-500 rounded-full mx-auto flex items-center justify-center text-4xl shadow-xl animate-bounce">
+                🏆
+            </div>
+
+            <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-pink-400 to-cyan-300">
+                HOÀN THÀNH XUẤT SẮC!
+            </h2>
+
+            <p class="text-slate-300 text-sm">
+                Chúc mừng bạn đã mở hết 7 Hộp Quà May Mắn và chinh phục thành công các bài toán Véctơ Thực Tế!
+            </p>
+
+            <div class="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 space-y-2">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-400">Tổng điểm tích lũy:</span>
+                    <span id="final-score" class="font-extrabold text-amber-400 text-lg">0</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-400">Số câu đã mở:</span>
+                    <span id="final-correct" class="font-bold text-emerald-400">0 / 7</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-400">Danh hiệu:</span>
+                    <span id="final-rank" class="font-bold text-pink-400">Bậc Thầy Véctơ 12</span>
+                </div>
+            </div>
+
+            <button onclick="restartGame()" class="w-full py-3 bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold rounded-xl shadow-lg transition">
+                <i class="fa-solid fa-rotate-right mr-2"></i> Chơi lại lần nữa
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                try {
+                    if (!this.ctx) {
+                        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    if (this.ctx && this.ctx.state === 'suspended') {
+                        this.ctx.resume();
+                    }
+                } catch(e) {}
+            }
+            playClick() {
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.08);
+                } catch(e) {}
+            }
+            playOpenBox() {
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.3);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(now + 0.3);
+                } catch(e) {}
+            }
+            playCorrect() {
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+                        gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.08 + 0.2);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.2);
+                    });
+                } catch(e) {}
+            }
+            playWrong() {
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(180, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } catch(e) {}
+            }
+        }
+        const sfx = new SoundFX();
+    </script>
+
+    <script>
+        // Helper Math HTML Wrappers
+        const vec = (name, sub = '') => sub ? `<span class="vec">${name}<sub class="sub">${sub}</sub></span>` : `<span class="vec">${name}</span>`;
+        const fName = (name, sub = '') => sub ? `${name}<sub class="sub">${sub}</sub>` : name;
+        const frac = (num, den) => `<span class="frac"><span class="num">${num}</span><span class="den">${den}</span></span>`;
+        const sqrt = (val) => `<span class="sqrt-symbol">√</span><span class="sqrt">${val}</span>`;
+
+        const questionsData = [
+            {
+                id: 1,
+                title: "Câu 1: Kéo vật nặng O bởi 3 lực trong không gian",
+                giftName: "Hộp Kim Cương",
+                color: "from-blue-500 to-indigo-600",
+                type: "tf",
+                text: `Một vật nặng O được kéo từ ba hướng như hình vẽ và chịu tác dụng của 3 lực ${vec('F', '1')}, ${vec('F', '2')}, ${vec('F', '3')} có độ lớn lần lượt là 24N, 12N, 6N. Biết góc tạo bởi 2 lực ${vec('F', '1')}, ${vec('F', '2')} là 120° và lực thứ ba ${vec('F', '3')} vuông góc với hai lực đầu tiên.`,
+                subQuestions: [
+                    { id: 'a', text: `a) ${vec('BO')} + ${vec('BA')} = ${vec('BD')}`, correct: false, explain: `a) <b>Sai</b>: Theo quy tắc hình bình hành ta có: ${vec('BO')} + ${vec('BD')} = ${vec('BA')} (hoặc ${vec('OA')} + ${vec('OB')} = ${vec('OD')}).` },
+                    { id: 'b', text: `b) ${vec('OE')} = ${vec('OA')} + ${vec('OB')} + ${vec('OC')}`, correct: true, explain: `b) <b>Đúng</b>: Theo quy tắc hình hộp: ${vec('OA')} + ${vec('OB')} + ${vec('OC')} = ${vec('OD')} + ${vec('OC')} = ${vec('OE')}.` },
+                    { id: 'c', text: `c) Độ dài của véctơ ${vec('OD')} là OD = 12${sqrt('7')}`, correct: false, explain: `c) <b>Sai</b>: OD² = OA² + OB² + 2·OA·OB·cos(120°) = 24² + 12² + 2·24·12·(-0.5) = 432 ⟹ OD = 12${sqrt('3')}.` },
+                    { id: 'd', text: `d) Độ lớn hợp lực tác dụng vào vật O là 6${sqrt('13')} N`, correct: true, explain: `d) <b>Đúng</b>: Hợp lực F = |${vec('OE')}| = ${sqrt(`OD² + OC²`)} = ${sqrt(`(12${sqrt('3')})² + 6²`)} = ${sqrt('432 + 36')} = ${sqrt('468')} = 6${sqrt('13')} N.` }
+                ]
+            },
+            {
+                id: 2,
+                title: "Câu 2: Treo đĩa kim loại tròn S.ABC",
+                giftName: "Hộp Ngọc Bích",
+                color: "from-emerald-500 to-teal-600",
+                type: "tf",
+                text: `Một chiếc đĩa kim loại khối lượng m = 4,5 kg được treo bởi ba sợi dây không dãn SA, SB, SC sao cho S.ABC là hình chóp đều có góc ASB = 60°. Khối lượng dây không đáng kể; lực căng của mỗi sợi dây SA, SB, SC đặt tại S tương ứng là ${vec('F', '1')}, ${vec('F', '2')}, ${vec('F', '3')} có độ lớn bằng nhau. Lấy gia tốc trọng trường g = 9,8 m/s².`,
+                subQuestions: [
+                    { id: 'a', text: `a) Trọng lực ${vec('P')} của hệ vật có độ lớn bằng 34,3 N`, correct: false, explain: `a) <b>Sai</b>: P = m · g = 4,5 × 9,8 = 44,1 N.` },
+                    { id: 'b', text: `b) ${vec('P')} = ${vec('F', '1')} + ${vec('F', '2')} + ${vec('F', '3')}`, correct: true, explain: `b) <b>Đúng</b>: Vì hệ cân bằng nên trọng lực ${vec('P')} đặt tại S được phân tích thành 3 lực căng dây ${vec('P')} = ${vec('F', '1')} + ${vec('F', '2')} + ${vec('F', '3')}.` },
+                    { id: 'c', text: `c) ${vec('F', '1')} · ${vec('F', '2')} ≠ ${vec('F', '1')} · ${vec('F', '3')}`, correct: false, explain: `c) <b>Sai</b>: Hình chóp đều góc ở đỉnh 60° nên các góc giữa từng cặp véctơ lực đều bằng 60° và |${vec('F', '1')}| = |${vec('F', '2')}| = |${vec('F', '3')}| nên ${vec('F', '1')} · ${vec('F', '2')} = ${vec('F', '1')} · ${vec('F', '3')} = ${frac('1','2')} F${fName('','1')}².` },
+                    { id: 'd', text: `d) Độ lớn của các lực ${vec('F', '1')}, ${vec('F', '2')}, ${vec('F', '3')} bằng 14,7 N`, correct: false, explain: `d) <b>Sai</b>: P² = (${vec('F', '1')} + ${vec('F', '2')} + ${vec('F', '3')})² = 6 F${fName('','1')}² ⟹ F${fName('','1')} = ${frac('P', sqrt('6'))} = ${frac('44,1', sqrt('6'))} ≈ 18 N.` }
+                ]
+            },
+            {
+                id: 3,
+                title: "Câu 3: Ba lực tác dụng vào ô tô đứng yên",
+                giftName: "Hộp Hổ Phách",
+                color: "from-amber-500 to-orange-600",
+                type: "mcq",
+                text: `Cho ba lực ${vec('F', '1')} = ${vec('MA')}, ${vec('F', '2')} = ${vec('MB')}, ${vec('F', '3')} = ${vec('MC')} cùng tác động vào một ô tô tại điểm M và ô tô đứng yên. Cho biết cường độ hai lực F${fName('','1')} = F${fName('','2')} = 25N và góc AMB = 60°. Cường độ lực ${vec('F', '3')} là bao nhiêu? (Làm tròn đến 1 chữ số thập phân).`,
+                options: [
+                    { text: "A. 25,0 N", correct: false },
+                    { text: "B. 43,3 N", correct: true },
+                    { text: "C. 50,0 N", correct: false },
+                    { text: "D. 35,4 N", correct: false }
+                ],
+                explain: `Chi tiết lời giải:<br>- Hợp lực ${vec('F', '12')} = ${vec('F', '1')} + ${vec('F', '2')} = ${vec('MD')} (với AMBD là hình bình hành).<br>- Do MA = MB = 25N và góc AMB = 60° nên △MAB là tam giác đều cạnh 25.<br>- Đường chéo MD = 2 × 25 × (${frac(sqrt('3'), '2')}) = 25${sqrt('3')} ≈ 43,301 N.<br>- Vì ô tô đứng yên nên ${vec('F', '1')} + ${vec('F', '2')} + ${vec('F', '3')} = ${vec('0')} ⟹ ${vec('F', '3')} = -${vec('MD')} ⟹ |${vec('F', '3')}| = 25${sqrt('3')} ≈ 43,3 N.`
+            },
+            {
+                id: 4,
+                title: "Câu 4: Treo đèn chùm m = 5kg",
+                giftName: "Hộp Hồng Ngọc",
+                color: "from-pink-500 to-rose-600",
+                type: "mcq",
+                text: `Một chiếc đèn chùm treo có khối lượng m = 5kg được thiết kế với đĩa đèn được giữ bởi 4 đoạn xích SA, SB, SC, SD sao cho S.ABCD là hình chóp tứ giác đều có góc ASC = 60°. Cho g = 10 m/s². Tính độ lớn lực căng trên mỗi sợi xích.`,
+                options: [
+                    { text: "A. 25 N", correct: false },
+                    { text: `B. ${frac(`25${sqrt('3')}`, '3')} N`, correct: true },
+                    { text: `C. 50${sqrt('3')} N`, correct: false },
+                    { text: "D. 12,5 N", correct: false }
+                ],
+                explain: `Chi tiết lời giải:<br>- Trọng lượng đèn P = m · g = 5 × 10 = 50N.<br>- Do tính chất đối xứng chóp tứ giác đều, |${vec('F', 'SA')} + ${vec('F', 'SC')}| = ${frac('1','2')} P = 25N.<br>- Xét tam giác SAC cân tại S có góc ASC = 60° ⟹ △SAC đều.<br>- Chiếu lên phương thẳng đứng SO: F${fName('','SA')} · cos(30°) = ${frac('P', '4')} = 12,5 ⟹ F${fName('','SA')} = ${frac('12,5', frac(sqrt('3'), '2'))} = ${frac(`25${sqrt('3')}`, '3')} N.`
+            },
+            {
+                id: 5,
+                title: "Câu 5: Chiếc cân đòn tay m = 3kg",
+                giftName: "Hộp Phượng Hoàng",
+                color: "from-purple-500 to-violet-600",
+                type: "input",
+                text: `Một chiếc cân đòn tay cân vật nặng m = 3kg giữ bởi 4 đoạn xích SA, SB, SC, SD (S.ABCD là hình chóp tứ giác đều có ASC = 90°). Độ lớn lực căng mỗi sợi xích có dạng ${frac(`a${sqrt('2')}`, '4')}. Lấy g = 10 m/s². Tìm giá trị của a.`,
+                correctVal: "30",
+                explain: `Chi tiết lời giải:<br>- Trọng lượng vật P = m · g = 3 × 10 = 30N.<br>- Gọi O là tâm đĩa hình vuông ABCD. Ta có 4 · SO = P = 30 ⟹ SO = ${frac('15','2')}.<br>- Tam giác ASC vuông cân tại S ⟹ góc SAO = 45°.<br>- Lực căng F${fName('','SA')} = ${frac('SO', 'sin(45°)')} = ${frac('15/2', frac(sqrt('2'), '2'))} = ${frac('15', sqrt('2'))} = ${frac(`30${sqrt('2')}`, '4')}.<br>- Đối chiếu dạng ${frac(`a${sqrt('2')}`, '4')} ⟹ a = 30.`
+            },
+            {
+                id: 6,
+                title: "Câu 6: Tấm gỗ tròn treo 3 dây OA, OB, OC đôi một vuông góc",
+                giftName: "Hộp Lam Ngọc",
+                color: "from-cyan-500 to-blue-600",
+                type: "mcq",
+                text: `Một tấm gỗ tròn treo song song với mặt phẳng nằm ngang bởi ba sợi dây không giãn xuất phát từ điểm O trên trần nhà và buộc vào A, B, C trên tấm gỗ sao cho các lực căng ${vec('F', '1')}, ${vec('F', '2')}, ${vec('F', '3')} trên OA, OB, OC đôi một vuông góc và F${fName('','1')} = F${fName('','2')} = F${fName('','3')} = 10N. Trọng lượng P của tấm gỗ là bao nhiêu?`,
+                options: [
+                    { text: "A. 30 N", correct: false },
+                    { text: `B. 10${sqrt('3')} N`, correct: true },
+                    { text: `C. 10${sqrt('2')} N`, correct: false },
+                    { text: "D. 20 N", correct: false }
+                ],
+                explain: `Chi tiết lời giải:<br>- Dựng hình hộp chữ nhật có 3 cạnh là 3 véctơ lực ${vec('F', '1')}, ${vec('F', '2')}, ${vec('F', '3')}. Do 3 lực đôi một vuông góc và cùng độ lớn 10N nên hình hộp là hình lập phương cạnh 10.<br>- Véctơ hợp lực ${vec('P')} = ${vec('F', '1')} + ${vec('F', '2')} + ${vec('F', '3')} chính là đường chéo của hình lập phương này.<br>- Độ dài đường chéo P = 10${sqrt('3')} N.`
+            },
+            {
+                id: 7,
+                title: "Câu 7: Cần cẩu cẩu ô tô trên khung sắt",
+                giftName: "Hộp Hoàng Kim",
+                color: "from-yellow-500 to-amber-600",
+                type: "input",
+                text: `Một ô tô đặt trong khung sắt hình hộp chữ nhật đáy trên ABCD song song mặt đất. Khung sắt buộc vào móc cần cẩu E bằng các dây EA, EB, EC, ED tạo với mặt đáy (ABCD) góc 60°. Cần cẩu kéo lên thẳng đứng với lực căng dây F${fName('','1')}=F${fName('','2')}=F${fName('','3')}=F${fName('','4')}=500N. Khung sắt nặng 200N. Tính trọng lượng xe ô tô (đơn vị N, làm tròn đến hàng đơn vị).`,
+                correctVal: "1532",
+                explain: `Chi tiết lời giải:<br>- Gọi O là tâm hình chữ nhật ABCD. Chiều cao EO = EA · sin(60°) = 500 × (${frac(sqrt('3'), '2')}) = 250${sqrt('3')} N.<br>- Tổng lực kéo thẳng đứng hướng lên của 4 sợi dây là 4 × EO = 4 × 250${sqrt('3')} = 1000${sqrt('3')} N ≈ 1732,05 N.<br>- Lực kéo này nâng cả ô tô + khung sắt ⟹ P${fName('','xe')} + P${fName('','khung')} = 1000${sqrt('3')}.<br>- P${fName('','xe')} = 1000${sqrt('3')} - 200 ≈ 1732,05 - 200 = 1532,05 ≈ 1532 N.`
+            }
+        ];
+
+        function generateSVGDiagram(qId) {
+            const width = 340;
+            const height = 240;
+
+            // Reusable Markers for Vector Arrows & Styling
+            const defs = `
+                <defs>
+                    <marker id="arr-black" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+                    </marker>
+                    <marker id="arr-red" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+                    </marker>
+                    <marker id="arr-green" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"/>
+                    </marker>
+                    <marker id="arr-cyan" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8"/>
+                    </marker>
+                    <linearGradient id="discGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#facc15"/>
+                        <stop offset="100%" stop-color="#eab308"/>
+                    </linearGradient>
+                    <linearGradient id="carGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#38bdf8"/>
+                        <stop offset="100%" stop-color="#0284c7"/>
+                    </linearGradient>
+                </defs>
+            `;
+
+            switch(qId) {
+                case 1:
+                    return `
+                    <svg width="${width}" height="${height}" viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">
+                        ${defs}
+                        <!-- Coordinate / Vector structure for Q1 -->
+                        <!-- Base Parallelogram OBD A -->
+                        <line x1="120" y1="140" x2="250" y2="140" stroke="#cbd5e1" stroke-width="2"/>
+                        <line x1="120" y1="140" x2="60" y2="200" stroke="#cbd5e1" stroke-width="2"/>
+                        <line x1="60" y1="200" x2="190" y2="200" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <line x1="250" y1="140" x2="190" y2="200" stroke="#cbd5e1" stroke-width="1.5"/>
+
+                        <!-- Vertical OC -->
+                        <line x1="120" y1="140" x2="120" y2="30" stroke="#cbd5e1" stroke-width="2"/>
+
+                        <!-- Diagonal Lines for Box / Vectors -->
+                        <line x1="120" y1="140" x2="190" y2="200" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <line x1="120" y1="30" x2="190" y2="90" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <line x1="190" y1="200" x2="190" y2="90" stroke="#cbd5e1" stroke-width="1.5"/>
+
+                        <!-- Vectors with Arrows -->
+                        <!-- F1 (OA) -->
+                        <line x1="120" y1="140" x2="240" y2="140" stroke="#334155" stroke-width="2" marker-end="url(#arr-black)"/>
+                        <text x="210" y="130" fill="#f8fafc" font-size="12" font-style="italic">F₁</text>
+                        <path d="M 205,122 L 217,122" stroke="#f8fafc" stroke-width="1"/>
+                        <path d="M 214,120 L 218,122 L 214,124" fill="#f8fafc"/>
+
+                        <!-- F2 (OB) -->
+                        <line x1="120" y1="140" x2="68" y2="192" stroke="#334155" stroke-width="2" marker-end="url(#arr-black)"/>
+                        <text x="90" y="170" fill="#f8fafc" font-size="12" font-style="italic">F₂</text>
+                        <path d="M 88,162 L 100,162" stroke="#f8fafc" stroke-width="1"/>
+                        <path d="M 97,160 L 101,162 L 97,164" fill="#f8fafc"/>
+
+                        <!-- F3 (OC) -->
+                        <line x1="120" y1="140" x2="120" y2="38" stroke="#334155" stroke-width="2" marker-end="url(#arr-black)"/>
+                        <text x="130" y="70" fill="#f8fafc" font-size="12" font-style="italic">F₃</text>
+                        <path d="M 128,62 L 140,62" stroke="#f8fafc" stroke-width="1"/>
+                        <path d="M 137,60 L 141,62 L 137,64" fill="#f8fafc"/>
+
+                        <!-- Vector OD -->
+                        <line x1="120" y1="140" x2="182" y2="192" stroke="#334155" stroke-width="2" marker-end="url(#arr-black)"/>
+
+                        <!-- Vector OE -->
+                        <line x1="120" y1="140" x2="183" y2="96" stroke="#334155" stroke-width="2.5" marker-end="url(#arr-black)"/>
+
+                        <!-- Angle Arc for 120 deg -->
+                        <path d="M 145,140 A 25,25 0 0,1 103,157" fill="none" stroke="#f8fafc" stroke-width="1.5"/>
+
+                        <!-- Vertex Labels -->
+                        <text x="110" y="145" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">O</text>
+                        <text x="255" y="145" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">A</text>
+                        <text x="48" y="212" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">B</text>
+                        <text x="115" y="25" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">C</text>
+                        <text x="195" y="212" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">D</text>
+                        <text x="198" y="90" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">E</text>
+                    </svg>`;
+
+                case 2:
+                    return `
+                    <svg width="${width}" height="${height}" viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">
+                        ${defs}
+                        <!-- Ceiling Bar -->
+                        <rect x="110" y="18" width="120" height="8" rx="4" fill="#475569" stroke="#94a3b8" stroke-width="1"/>
+                        <circle cx="170" cy="22" r="4" fill="#3b82f6"/>
+
+                        <!-- Disc (Yellow with Blue Border) -->
+                        <ellipse cx="170" cy="175" rx="120" ry="32" fill="url(#discGrad)" stroke="#2563eb" stroke-width="6"/>
+
+                        <!-- Hanging Ropes SA, SB, SC -->
+                        <line x1="170" y1="22" x2="68" y2="162" stroke="#991b1b" stroke-width="2.5"/>
+                        <line x1="170" y1="22" x2="195" y2="202" stroke="#991b1b" stroke-width="2.5"/>
+                        <line x1="170" y1="22" x2="272" y2="162" stroke="#991b1b" stroke-width="2.5"/>
+
+                        <!-- Points A, B, C, S -->
+                        <circle cx="68" cy="162" r="4" fill="#93c5fd" stroke="#1d4ed8" stroke-width="1.5"/>
+                        <circle cx="195" cy="202" r="4" fill="#93c5fd" stroke="#1d4ed8" stroke-width="1.5"/>
+                        <circle cx="272" cy="162" r="4" fill="#93c5fd" stroke="#1d4ed8" stroke-width="1.5"/>
+
+                        <!-- Labels -->
+                        <text x="167" y="14" fill="#f8fafc" font-size="14" font-weight="bold" font-style="italic">S</text>
+                        <text x="48" y="160" fill="#f8fafc" font-size="14" font-weight="bold" font-style="italic">A</text>
+                        <text x="198" y="222" fill="#f8fafc" font-size="14" font-weight="bold" font-style="italic">B</text>
+                        <text x="282" y="160" fill="#f8fafc" font-size="14" font-weight="bold" font-style="italic">C</text>
+                    </svg>`;
+
+                case 3:
+                    return `
+                    <svg width="${width}" height="${height}" viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">
+                        ${defs}
+                        <!-- Blue Car Illustration -->
+                        <g transform="translate(100, 70)">
+                            <!-- Car roof/windows -->
+                            <path d="M 25,40 C 35,10 75,10 100,40 Z" fill="#0ea5e9" stroke="#f8fafc" stroke-width="1.5"/>
+                            <path d="M 38,38 C 45,20 70,20 78,38 Z" fill="#e0f2fe"/>
+                            <!-- Car body -->
+                            <path d="M 5,40 Q 5,30 20,30 L 110,30 Q 125,30 130,45 L 130,65 Q 130,70 120,70 L 10,70 Q 0,70 5,40 Z" fill="#0284c7" stroke="#f8fafc" stroke-width="1.5"/>
+                            <!-- Wheels -->
+                            <circle cx="30" cy="70" r="12" fill="#1e293b" stroke="#f8fafc" stroke-width="2"/>
+                            <circle cx="30" cy="70" r="4" fill="#cbd5e1"/>
+                            <circle cx="100" cy="70" r="12" fill="#1e293b" stroke="#f8fafc" stroke-width="2"/>
+                            <circle cx="100" cy="70" r="4" fill="#cbd5e1"/>
+                        </g>
+
+                        <!-- Point M -->
+                        <circle cx="205" cy="120" r="5" fill="#ef4444"/>
+                        <text x="200" y="138" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">M</text>
+
+                        <!-- Force Vectors -->
+                        <!-- F1 (MA) -->
+                        <line x1="205" y1="120" x2="135" y2="70" stroke="#22c55e" stroke-width="2.5" marker-end="url(#arr-green)"/>
+                        <text x="125" y="62" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">A</text>
+                        <text x="165" y="80" fill="#f8fafc" font-size="12" font-style="italic">F₁</text>
+                        <path d="M 163,72 L 175,72" stroke="#f8fafc" stroke-width="1"/>
+                        <path d="M 172,70 L 176,72 L 172,74" fill="#f8fafc"/>
+
+                        <!-- F2 (MB) -->
+                        <line x1="205" y1="120" x2="135" y2="170" stroke="#22c55e" stroke-width="2.5" marker-end="url(#arr-green)"/>
+                        <text x="125" y="182" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">B</text>
+                        <text x="165" y="165" fill="#f8fafc" font-size="12" font-style="italic">F₂</text>
+                        <path d="M 163,157 L 175,157" stroke="#f8fafc" stroke-width="1"/>
+                        <path d="M 172,155 L 176,157 L 172,159" fill="#f8fafc"/>
+
+                        <!-- F3 (MC) -->
+                        <line x1="205" y1="120" x2="305" y2="120" stroke="#22c55e" stroke-width="2.5" marker-end="url(#arr-green)"/>
+                        <text x="312" y="125" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">C</text>
+                        <text x="250" y="112" fill="#f8fafc" font-size="12" font-style="italic">F₃</text>
+                        <path d="M 248,104 L 260,104" stroke="#f8fafc" stroke-width="1"/>
+                        <path d="M 257,102 L 261,104 L 257,106" fill="#f8fafc"/>
+
+                        <!-- Parallelogram Resultant F1 + F2 (MD) -->
+                        <line x1="135" y1="70" x2="65" y2="120" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="3,3"/>
+                        <line x1="135" y1="170" x2="65" y2="120" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="3,3"/>
+                        <line x1="205" y1="120" x2="65" y2="120" stroke="#ef4444" stroke-width="2.5" marker-end="url(#arr-red)"/>
+                        <text x="50" y="125" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">D</text>
+                        <text x="110" y="112" fill="#ef4444" font-size="12" font-weight="bold" font-style="italic">F₁ + F₂</text>
+
+                        <!-- Arc 60 deg -->
+                        <path d="M 180,102 A 30,30 0 0,0 180,138" fill="none" stroke="#ef4444" stroke-width="2"/>
+                        <text x="185" y="124" fill="#ef4444" font-size="11" font-weight="bold">60°</text>
+                    </svg>`;
+
+                case 4:
+                case 5:
+                    return `
+                    <svg width="${width}" height="${height}" viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">
+                        ${defs}
+                        <!-- Ceiling S -->
+                        <line x1="120" y1="18" x2="220" y2="18" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
+                        <circle cx="170" cy="22" r="4" fill="#f8fafc"/>
+                        <text x="170" y="14" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic" text-anchor="middle">S</text>
+
+                        <!-- Pyramid S.ABCD -->
+                        <!-- Square ABCD Base -->
+                        <polygon points="100,165 210,165 250,205 140,205" fill="rgba(56, 189, 248, 0.08)" stroke="#38bdf8" stroke-width="1.5"/>
+
+                        <!-- Center Axis SO -->
+                        <line x1="170" y1="22" x2="170" y2="185" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="3,3"/>
+                        <circle cx="170" cy="185" r="3" fill="#cbd5e1"/>
+                        <text x="175" y="188" fill="#f8fafc" font-size="11" font-style="italic">O</text>
+
+                        <!-- Chains SA, SB, SC, SD -->
+                        <line x1="170" y1="22" x2="100" y2="165" stroke="#f59e0b" stroke-width="2"/>
+                        <line x1="170" y1="22" x2="210" y2="165" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3,3"/>
+                        <line x1="170" y1="22" x2="250" y2="205" stroke="#f59e0b" stroke-width="2"/>
+                        <line x1="170" y1="22" x2="140" y2="205" stroke="#f59e0b" stroke-width="2"/>
+
+                        <!-- Hanging Object (Lamp or Weight) -->
+                        <circle cx="170" cy="185" r="18" fill="url(#discGrad)" stroke="#b45309" stroke-width="2"/>
+                        <text x="170" y="189" fill="#0f172a" font-size="9" font-weight="extrabold" text-anchor="middle">${qId === 4 ? 'ĐÈN' : '3kg'}</text>
+
+                        <!-- Vertices Labels -->
+                        <text x="88" y="168" fill="#f8fafc" font-size="12" font-weight="bold" font-style="italic">A</text>
+                        <text x="218" y="168" fill="#f8fafc" font-size="12" font-weight="bold" font-style="italic">B</text>
+                        <text x="258" y="210" fill="#f8fafc" font-size="12" font-weight="bold" font-style="italic">C</text>
+                        <text x="128" y="210" fill="#f8fafc" font-size="12" font-weight="bold" font-style="italic">D</text>
+                    </svg>`;
+
+                case 6:
+                    return `
+                    <svg width="${width}" height="${height}" viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">
+                        ${defs}
+                        <!-- Ceiling Point O -->
+                        <circle cx="170" cy="30" r="5" fill="#f8fafc"/>
+                        <text x="170" y="20" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic" text-anchor="middle">O</text>
+
+                        <!-- Wooden Disc -->
+                        <ellipse cx="170" cy="170" rx="95" ry="32" fill="#78350f" stroke="#f59e0b" stroke-width="2.5"/>
+                        <ellipse cx="170" cy="170" rx="80" ry="24" fill="#92400e"/>
+
+                        <!-- Ropes OA, OB, OC -->
+                        <line x1="170" y1="30" x2="85" y2="155" stroke="#38bdf8" stroke-width="2" marker-end="url(#arr-cyan)"/>
+                        <line x1="170" y1="30" x2="255" y2="155" stroke="#38bdf8" stroke-width="2" marker-end="url(#arr-cyan)"/>
+                        <line x1="170" y1="30" x2="170" y2="192" stroke="#38bdf8" stroke-width="2" marker-end="url(#arr-cyan)"/>
+
+                        <!-- Right angle markers at O -->
+                        <path d="M 160,42 L 168,48 L 176,38" fill="none" stroke="#facc15" stroke-width="1.5"/>
+
+                        <!-- Labels -->
+                        <text x="70" y="160" fill="#f8fafc" font-size="12" font-weight="bold" font-style="italic">A</text>
+                        <text x="265" y="160" fill="#f8fafc" font-size="12" font-weight="bold" font-style="italic">B</text>
+                        <text x="175" y="205" fill="#f8fafc" font-size="12" font-weight="bold" font-style="italic">C</text>
+
+                        <text x="115" y="85" fill="#38bdf8" font-size="11" font-style="italic">F₁</text>
+                        <text x="220" y="85" fill="#38bdf8" font-size="11" font-style="italic">F₂</text>
+                        <text x="175" y="110" fill="#38bdf8" font-size="11" font-style="italic">F₃</text>
+                    </svg>`;
+
+                case 7:
+                    return `
+                    <svg width="${width}" height="${height}" viewBox="0 0 340 260" xmlns="http://www.w3.org/2000/svg">
+                        ${defs}
+                        
+                        <!-- Top Crane Block Hook -->
+                        <g transform="translate(155, 2)">
+                            <rect x="10" y="0" width="20" height="18" fill="#f59e0b" rx="3" stroke="#b45309" stroke-width="1.5"/>
+                            <path d="M 12 0 L 12 18 M 18 0 L 18 18 M 24 0 L 24 18" stroke="#78350f" stroke-width="1.5"/>
+                            <path d="M 20 18 Q 20 28 14 28 Q 8 28 12 21" fill="none" stroke="#334155" stroke-width="3" stroke-linecap="round"/>
+                        </g>
+
+                        <!-- Point E (Ring Top) -->
+                        <circle cx="170" cy="32" r="4.5" fill="#1e293b" stroke="#f8fafc" stroke-width="1.5"/>
+                        <text x="158" y="32" fill="#f8fafc" font-size="13" font-weight="bold" font-style="italic">E</text>
+
+                        <!-- Base Rectangle ABCD (Upper Frame Structure) -->
+                        <!-- Points: A(70,110), B(125,145), C(270,115), D(205,82) -->
+                        <line x1="70" y1="110" x2="125" y2="145" stroke="#2563eb" stroke-width="2"/>
+                        <line x1="125" y1="145" x2="270" y2="115" stroke="#2563eb" stroke-width="2"/>
+                        <line x1="270" y1="115" x2="205" y2="82" stroke="#2563eb" stroke-width="1.5"/>
+                        <line x1="205" y1="82" x2="70" y2="110" stroke="#2563eb" stroke-width="1.5"/>
+
+                        <!-- Vertical Support Wires Down to Platform -->
+                        <line x1="70" y1="110" x2="70" y2="195" stroke="#2563eb" stroke-width="1.5"/>
+                        <line x1="125" y1="145" x2="125" y2="230" stroke="#2563eb" stroke-width="1.5"/>
+                        <line x1="270" y1="115" x2="270" y2="200" stroke="#2563eb" stroke-width="1.5"/>
+                        <line x1="205" y1="82" x2="205" y2="167" stroke="#2563eb" stroke-width="1" stroke-dasharray="2,2"/>
+
+                        <!-- Platform Base (Slab) -->
+                        <polygon points="65,195 125,230 275,200 210,167" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+                        <polygon points="65,195 125,230 125,238 65,203" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+                        <polygon points="125,230 275,200 275,208 125,238" fill="#0f172a" stroke="#64748b" stroke-width="1"/>
+
+                        <!-- Blue Car Model on Platform -->
+                        <g transform="translate(100, 140)">
+                            <!-- Main Body -->
+                            <path d="M 15,35 Q 25,12 55,10 L 95,12 Q 115,20 125,35 L 130,52 Q 130,62 115,62 L 10,60 Q -5,60 0,48 Z" fill="#0284c7" stroke="#f8fafc" stroke-width="1.2"/>
+                            <!-- Roof & Windows -->
+                            <path d="M 40,14 L 85,14 Q 102,20 108,32 L 28,32 Z" fill="#38bdf8"/>
+                            <path d="M 52,16 L 80,16 L 80,30 L 52,30 Z" fill="#0284c7"/>
+                            <!-- Sunroof -->
+                            <polygon points="50,11 75,11 70,14 48,14" fill="#0f172a"/>
+                            <!-- Headlight -->
+                            <ellipse cx="6" cy="45" rx="5" ry="3" fill="#fef08a"/>
+                            <!-- Wheels -->
+                            <ellipse cx="25" cy="58" rx="10" ry="12" fill="#0f172a" stroke="#e2e8f0" stroke-width="1.5"/>
+                            <ellipse cx="25" cy="58" rx="4" ry="5" fill="#cbd5e1"/>
+                            <ellipse cx="108" cy="50" rx="10" ry="12" fill="#0f172a" stroke="#e2e8f0" stroke-width="1.5"/>
+                            <ellipse cx="108" cy="50" rx="4" ry="5" fill="#cbd5e1"/>
+                        </g>
+
+                        <!-- Upper Hanging Cables EA, EB, EC, ED with Vector Arrows -->
+                        <!-- Cable EA & Vector F1 -->
+                        <line x1="170" y1="32" x2="70" y2="110" stroke="#1d4ed8" stroke-width="2" marker-end="url(#arr-cyan)"/>
+                        <text x="110" y="60" fill="#1d4ed8" font-size="12" font-style="italic" font-weight="bold">F₁</text>
+                        <path d="M 108,50 L 120,50" stroke="#1d4ed8" stroke-width="1"/>
+                        <path d="M 117,48 L 121,50 L 117,52" fill="#1d4ed8"/>
+
+                        <!-- Cable EB & Vector F2 -->
+                        <line x1="170" y1="32" x2="125" y2="145" stroke="#1d4ed8" stroke-width="2" marker-end="url(#arr-cyan)"/>
+                        <text x="135" y="95" fill="#1d4ed8" font-size="12" font-style="italic" font-weight="bold">F₂</text>
+                        <path d="M 133,85 L 145,85" stroke="#1d4ed8" stroke-width="1"/>
+                        <path d="M 142,83 L 146,85 L 142,87" fill="#1d4ed8"/>
+
+                        <!-- Cable ED & Vector F4 -->
+                        <line x1="170" y1="32" x2="205" y2="82" stroke="#1d4ed8" stroke-width="1.8" marker-end="url(#arr-cyan)"/>
+                        <text x="195" y="72" fill="#1d4ed8" font-size="12" font-style="italic" font-weight="bold">F₄</text>
+                        <path d="M 193,62 L 205,62" stroke="#1d4ed8" stroke-width="1"/>
+                        <path d="M 202,60 L 206,62 L 202,64" fill="#1d4ed8"/>
+
+                        <!-- Cable EC & Vector F3 -->
+                        <line x1="170" y1="32" x2="270" y2="115" stroke="#1d4ed8" stroke-width="2" marker-end="url(#arr-cyan)"/>
+                        <text x="232" y="68" fill="#1d4ed8" font-size="12" font-style="italic" font-weight="bold">F₃</text>
+                        <path d="M 230,58 L 242,58" stroke="#1d4ed8" stroke-width="1"/>
+                        <path d="M 239,56 L 243,58 L 239,60" fill="#1d4ed8"/>
+
+                        <!-- Vertex Labels A, B, C, D -->
+                        <text x="56" y="112" fill="#1e293b" font-size="13" font-weight="bold" font-style="italic">A</text>
+                        <text x="110" y="152" fill="#1e293b" font-size="13" font-weight="bold" font-style="italic">B</text>
+                        <text x="276" y="118" fill="#1e293b" font-size="13" font-weight="bold" font-style="italic">C</text>
+                        <text x="210" y="80" fill="#1e293b" font-size="13" font-weight="bold" font-style="italic">D</text>
+                    </svg>`;
+
+                default:
+                    return '';
+            }
+        }
+    </script>
+
+    <script>
+        let currentScore = 0;
+        let openedCount = 0;
+        let activeQuestion = null;
+        let openedBoxIds = new Set();
+        let timerSeconds = 21 * 60; 
+        let timerInterval = null;
+
+        function initGrid() {
+            const grid = document.getElementById('boxes-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            questionsData.forEach((q, idx) => {
+                const boxNum = idx + 1;
+                const isOpened = openedBoxIds.has(q.id);
+
+                const boxCard = document.createElement('div');
+                boxCard.className = `gift-box relative rounded-2xl bg-gradient-to-b ${q.color} p-5 text-center cursor-pointer shadow-xl flex flex-col items-center justify-between border border-white/20 min-h-[170px] ${isOpened ? 'opened' : 'glow-effect'}`;
+                boxCard.onclick = () => openQuestionModal(q.id);
+
+                boxCard.innerHTML = `
+                    <div class="absolute top-3 left-3 bg-black/40 backdrop-blur-md text-xs px-2.5 py-1 rounded-full text-white font-bold">
+                        #${boxNum}
+                    </div>
+                    ${isOpened ? 
+                        `<div class="absolute top-3 right-3 text-emerald-300 text-lg"><i class="fa-solid fa-circle-check"></i></div>` : 
+                        `<div class="absolute top-3 right-3 text-amber-300 text-xs animate-pulse"><i class="fa-solid fa-sparkles"></i> Mở quà</div>`
+                    }
+                    <div class="my-auto text-4xl md:text-5xl drop-shadow-md transition-transform gift-lid">
+                        ${isOpened ? '🎁' : '📦'}
+                    </div>
+                    <div class="w-full pt-2">
+                        <span class="block text-xs font-medium text-white/80 uppercase tracking-wider">${q.giftName}</span>
+                        <span class="block text-sm font-bold text-white truncate">${q.title.split(':')[0]}</span>
+                    </div>
+                `;
+
+                grid.appendChild(boxCard);
+            });
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    endGame();
+                }
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+            const s = (timerSeconds % 60).toString().padStart(2, '0');
+            const el = document.getElementById('timer-display');
+            if (el) el.innerText = `${m}:${s}`;
+        }
+
+        function openQuestionModal(qId) {
+            sfx.playOpenBox();
+            activeQuestion = questionsData.find(q => q.id === qId);
+            if (!activeQuestion) return;
+
+            const modal = document.getElementById('question-modal');
+            const boxBadge = document.getElementById('modal-box-badge');
+            const titleEl = document.getElementById('modal-title');
+            const questionTextEl = document.getElementById('modal-question-text');
+            const svgArea = document.getElementById('svg-drawing-area');
+            const container = document.getElementById('modal-answer-container');
+
+            if (boxBadge) boxBadge.innerText = `Hộp quà số ${activeQuestion.id}`;
+            if (titleEl) titleEl.innerText = activeQuestion.title;
+            if (questionTextEl) questionTextEl.innerHTML = activeQuestion.text;
+            if (svgArea) svgArea.innerHTML = generateSVGDiagram(activeQuestion.id);
+
+            if (container) {
+                container.innerHTML = '';
+                const isAlreadyOpened = openedBoxIds.has(activeQuestion.id);
+
+                if (activeQuestion.type === 'tf') {
+                    activeQuestion.subQuestions.forEach((sub) => {
+                        const subDiv = document.createElement('div');
+                        subDiv.className = "bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-2";
+                        subDiv.innerHTML = `
+                            <div class="text-sm text-slate-200 font-medium">${sub.text}</div>
+                            <div class="flex gap-2 shrink-0">
+                                <label class="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-xs">
+                                    <input type="radio" name="sub_${sub.id}" value="true" ${isAlreadyOpened ? 'disabled' : ''} class="accent-emerald-400"> Đúng
+                                </label>
+                                <label class="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-xs">
+                                    <input type="radio" name="sub_${sub.id}" value="false" ${isAlreadyOpened ? 'disabled' : ''} class="accent-rose-400"> Sai
+                                </label>
+                            </div>
+                        `;
+                        container.appendChild(subDiv);
+                    });
+                } else if (activeQuestion.type === 'mcq') {
+                    activeQuestion.options.forEach((opt, idx) => {
+                        const label = document.createElement('label');
+                        label.className = "flex items-center gap-3 p-3 bg-slate-800 hover:bg-slate-750 rounded-xl border border-slate-700 cursor-pointer text-sm text-slate-200 transition";
+                        label.innerHTML = `
+                            <input type="radio" name="mcq_opt" value="${idx}" ${isAlreadyOpened ? 'disabled' : ''} class="accent-cyan-400 w-4 h-4">
+                            <span>${opt.text}</span>
+                        `;
+                        container.appendChild(label);
+                    });
+                } else if (activeQuestion.type === 'input') {
+                    container.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <input type="number" id="num-answer-input" placeholder="Nhập kết quả số..." ${isAlreadyOpened ? 'disabled' : ''} 
+                                class="bg-slate-800 border border-slate-600 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-cyan-400 w-full md:w-64 text-sm">
+                        </div>
+                    `;
+                }
+
+                document.getElementById('explanation-box').classList.add('hidden');
+                
+                if (isAlreadyOpened) {
+                    document.getElementById('btn-submit-ans').classList.add('hidden');
+                    document.getElementById('btn-next-box').classList.remove('hidden');
+                    showExplanation(true, activeQuestion.explain || "Bạn đã giải xong câu này!");
+                } else {
+                    document.getElementById('btn-submit-ans').classList.remove('hidden');
+                    document.getElementById('btn-next-box').classList.add('hidden');
+                }
+            }
+
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('active');
+            }
+        }
+
+        function submitAnswer() {
+            if (!activeQuestion) return;
+
+            let isCorrect = false;
+            let explanationText = "";
+
+            if (activeQuestion.type === 'tf') {
+                let allCorrect = true;
+                let details = [];
+                activeQuestion.subQuestions.forEach(sub => {
+                    const selected = document.querySelector(`input[name="sub_${sub.id}"]:checked`);
+                    const val = selected ? (selected.value === 'true') : null;
+                    if (val !== sub.correct) {
+                        allCorrect = false;
+                    }
+                    details.push(sub.explain);
+                });
+                isCorrect = allCorrect;
+                explanationText = details.join("<br>");
+            } else if (activeQuestion.type === 'mcq') {
+                const selected = document.querySelector('input[name="mcq_opt"]:checked');
+                if (selected) {
+                    const idx = parseInt(selected.value);
+                    isCorrect = activeQuestion.options[idx].correct;
+                }
+                explanationText = activeQuestion.explain;
+            } else if (activeQuestion.type === 'input') {
+                const val = document.getElementById('num-answer-input').value.trim();
+                isCorrect = (val === activeQuestion.correctVal);
+                explanationText = activeQuestion.explain;
+            }
+
+            if (isCorrect) {
+                sfx.playCorrect();
+                if (!openedBoxIds.has(activeQuestion.id)) {
+                    currentScore += 100;
+                    openedCount++;
+                    openedBoxIds.add(activeQuestion.id);
+                }
+            } else {
+                sfx.playWrong();
+                if (!openedBoxIds.has(activeQuestion.id)) {
+                    openedCount++;
+                    openedBoxIds.add(activeQuestion.id);
+                }
+            }
+
+            document.getElementById('score-val').innerText = currentScore;
+            document.getElementById('opened-count').innerText = `${openedCount} / 7`;
+
+            showExplanation(isCorrect, explanationText);
+            document.getElementById('btn-submit-ans').classList.add('hidden');
+            document.getElementById('btn-next-box').classList.remove('hidden');
+
+            initGrid();
+
+            if (openedCount >= 7) {
+                setTimeout(endGame, 2000);
+            }
+        }
+
+        function closeModal() {
+            sfx.playClick();
+            const modal = document.getElementById('question-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.classList.add('hidden');
+            }
+        }
+
+        function showExplanation(isCorrect, text) {
+            const expBox = document.getElementById('explanation-box');
+            const statusHeader = document.getElementById('result-status-header');
+            const expText = document.getElementById('explanation-text');
+
+            if (!expBox || !statusHeader || !expText) return;
+
+            expBox.classList.remove('hidden');
+            if (isCorrect) {
+                statusHeader.className = "font-bold flex items-center gap-2 text-base text-emerald-400";
+                statusHeader.innerHTML = `<i class="fa-solid fa-circle-check"></i> Chính xác! (+100 điểm)`;
+            } else {
+                statusHeader.className = "font-bold flex items-center gap-2 text-base text-rose-400";
+                statusHeader.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Chưa chính xác!`;
+            }
+            expText.innerHTML = text;
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            closeModal();
+
+            document.getElementById('final-score').innerText = currentScore;
+            document.getElementById('final-correct').innerText = `${openedCount} / 7`;
+
+            let rank = "Học Viên Véctơ";
+            if (currentScore >= 600) rank = "Bậc Thầy Véctơ Không Gian 12";
+            else if (currentScore >= 400) rank = "Chuyên Gia Giải Toán 12";
+            document.getElementById('final-rank').innerText = rank;
+
+            const sumModal = document.getElementById('summary-modal');
+            if (sumModal) {
+                sumModal.classList.remove('hidden');
+                sumModal.classList.add('active');
+            }
+        }
+
+        function restartGame() {
+            sfx.playClick();
+            currentScore = 0;
+            openedCount = 0;
+            openedBoxIds.clear();
+            timerSeconds = 21 * 60;
+
+            document.getElementById('score-val').innerText = '0';
+            document.getElementById('opened-count').innerText = '0 / 7';
+            
+            const sumModal = document.getElementById('summary-modal');
+            if (sumModal) {
+                sumModal.classList.remove('active');
+                sumModal.classList.add('hidden');
+            }
+
+            initGrid();
+            startTimer();
+        }
+
+        window.onload = function() {
+            initGrid();
+            startTimer();
+        };
+    </script>
+</body>
+</html>
